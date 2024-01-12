@@ -214,7 +214,7 @@ class Program
         string username = Console.ReadLine();
 
         Console.Write("Password: ");
-        string password = Console.ReadLine();
+        string password = ReadPassword();
 
         if (AuthenticateUser(username, password))
         {
@@ -236,7 +236,41 @@ class Program
         }
         return false;
     }
+    
+    //Girişte girilen şifrenin yıldız olarak gösterilmesi.
+    static string ReadPassword()
+    {
+        string password = "";
+        ConsoleKeyInfo key;
 
+        do
+        {
+            key = Console.ReadKey(true);
+
+            //backspace tuşunun çalışmaması sağlandı.
+            if (key.Key != ConsoleKey.Backspace && key.Key != ConsoleKey.Enter)
+            {
+                password += key.KeyChar;
+                Console.Write("*");
+            }
+            else
+            {
+                if (key.Key == ConsoleKey.Backspace && password.Length > 0)
+                {
+                    password = password.Substring(0, (password.Length - 1));
+                    Console.Write("\b \b");
+                }
+            }
+        }
+        while (key.Key != ConsoleKey.Enter);
+
+        Console.WriteLine(); 
+        return password;
+    }
+
+    
+
+    //menü 
     static void StartHotelReservationSystem()
     {
         Hotel hotel = new Hotel("Lüx Hotel");
@@ -254,7 +288,7 @@ class Program
 
             Console.WriteLine("What is your choise?: ");
             string choice = Console.ReadLine();
-
+            //swich-case ile istenen fonskiyona gidildi.
             switch (choice)
             {
                 case "1":
@@ -282,50 +316,40 @@ class Program
             //Switch komutu ile kullanıcının seçtiği seçeneğe göre case komutu kullanılarak istenen şeyi kullanıcıya gösterildi.
         }
     }
-
-    //kullanıcıya otelde bulunan rezervasyonlar gösterildi.
+    
+    //otel bilgilerini gösterecek bir fonksiyon oluşturuldu.
     static void viewHotelStatus(Hotel hotel)
     {
-        Console.WriteLine($"{hotel.Name} Hotel Status:");
-
+        Console.WriteLine($"{hotel.Name} Hotel Status:\n");
+        // bilgiler tablo şekline konuldu
+        Console.WriteLine("{0,-10} {1,-20} {2,-20} {3,-15} {4,-15} {5,-15}",
+                          "Room", "Customer Name", "Customer Surname", "Stay Type", "Stay Duration", "Number of People");
+        Console.WriteLine(new string('-', 100));
+        //odanın billeri öğrenildi
         foreach (Room room in hotel.Rooms)
         {
-            Console.Write($"Room {room.roomNumber}: ");
+            string stayType = "";
+            string stayDuration = "";
 
-            if (room.customerName == "")
+            if (room.numberOfHoursToStay > 0)
             {
-                Console.WriteLine("Empty");
+                stayType = "Hourly";
+                stayDuration = $"{room.numberOfHoursToStay} hours";
             }
-            else
+            else if (room.numberOfDaysToStay > 0)
             {
-                Console.Write($"{room.customerName} {room.customerSurname}, ");
-
-                if (room.numberOfHoursToStay > 0)
-                {
-                    Console.WriteLine($"Hourly stay for {room.numberOfHoursToStay} hours");
-                }
-                else if (room.numberOfDaysToStay > 0)
-                {
-                    Console.WriteLine($"Daily stay for {room.numberOfDaysToStay} days");
-                }
-                else
-                {
-                    Console.WriteLine("Invalid reservation");
-                }
+                stayType = "Daily";
+                stayDuration = $"{room.numberOfDaysToStay} days";
             }
+            //son olarak da tabloya yerleştirildi.
+            Console.WriteLine("{0,-10} {1,-20} {2,-20} {3,-15} {4,-15} {5,-15}",
+                              room.roomNumber, room.customerName, room.customerSurname, stayType, stayDuration, room.numberOfPeople);
         }
     }
-
-
-
-
-
-
-
-
-
+    //rezervasyon oluşturma fonksiyonu oluşturuldu.
     static void makeAReservation(Hotel hotel)
     {
+        //temel bilgiler kullanıcıya soruldu.
         Console.Write("Customer name: ");
         string Name = Console.ReadLine();
 
@@ -339,7 +363,7 @@ class Program
             Console.WriteLine("Invalid number of people. Please enter a positive integer.");
             Console.Write("How many people?: ");
         }
-
+        //kullanıcıya otelde günlük mü yoksa saatlik mi kalındığı soruldu.
         Console.Write("Stay hourly (1) or daily (2)? Enter 1 or 2: ");
         int stayOption;
         while (!int.TryParse(Console.ReadLine(), out stayOption) || (stayOption != 1 && stayOption != 2))
@@ -347,7 +371,7 @@ class Program
             Console.WriteLine("Invalid option. Please enter 1 for hourly or 2 for daily.");
             Console.Write("Stay hourly (1) or daily (2)? Enter 1 or 2: ");
         }
-
+        //eğer saatlik kalacaksa ona göre kullanıcıya sorular yöneltildi.
         if (stayOption == 1)
         {
             Console.Write("Number of Hours to Stay: ");
@@ -364,10 +388,10 @@ class Program
             {
                 Console.WriteLine("Invalid room number. Please enter again.");
                 Console.Write("\nWhich room ?\n 1-Normal (for 1 people---> 1 single bed.),\n 2-Normal Large (for 2 people---> 2 single bed.),\n 3-Premium (for 3 people---> 1 single bed and 1 double bed.),\n 4-Premium Large (for 4 people--->2 single bed and 1 double bed.),\n 5-King Suite (for 5 people--->1 single bed and 2 double bed.),\n 6-King Suite Large ( for 6 people--->4 single bed and 1 double bed.): "); //Kullanıcıya hangi odayı istediğini sorduk.            
-                
+
             }
             Room targetRoom = hotel.Rooms.Find(room => room.roomNumber == RoomNumber);
-
+            //oda yazılan özelliklere göre dolduruldu.
             if (targetRoom != null && targetRoom.customerName == "")
             {
                 targetRoom.customerName = Name;
@@ -377,13 +401,16 @@ class Program
 
                 Console.WriteLine($"{Name} {Surname}, room no:{RoomNumber}, For {numberOfPeople} person, Made a reservation for {numberOfHoursToStay} hours.");
             }
+            //eğer oda hali hazırda dolu ise hata mesajı dönülür.
             else
             {
-                Console.WriteLine($"Room {RoomNumber} is full or invalid or has too many people.");
+                Console.WriteLine($"Room {RoomNumber} is full.");
             }
         }
+        //eğer günlük kalacaksa ona göre kullanıcıya sorular yöneltildi.
         else if (stayOption == 2)
         {
+            //yukarda da olduğu gibi burda da aynı şeyleri yapıyoruz.
             Console.Write("Number of Days to Stay: ");
             int numberOfDaysToStay;
             while (!int.TryParse(Console.ReadLine(), out numberOfDaysToStay) || numberOfDaysToStay <= 0)
@@ -421,54 +448,78 @@ class Program
             Console.WriteLine("Invalid option. Please enter 1 for hourly or 2 for daily.");
         }
     }
+    //Rezervasyon silinmesi fonskiyonu oluşturuldu.
     static void deleteReservation(Hotel hotel)
     {
-        //Kullanıcıya hangi oda ilgili işlem yapıcağı soruldu.
-        Console.Write("\nWhich room ? \n1-Normal ,\n 2-Normal Large ,\n 3-Premium ,\n 4-Premium Large ,\n 5-King Suite ,\n 6-King Suite Large\n: ");
+        Console.Write("\nWhich room? \n1-Normal ,\n 2-Normal Large ,\n 3-Premium ,\n 4-Premium Large ,\n 5-King Suite ,\n 6-King Suite Large\n: ");
 
         int roomNumber;
-        //TryParse komutu kullanıcının tam sayı girmesini ve tam sayının 1 ile 6 arasında olduğunu kontrol eder.
         while (!int.TryParse(Console.ReadLine(), out roomNumber) || roomNumber < 1 || roomNumber > 6)
         {
             Console.WriteLine("Invalid room number. Please enter again.");
-            Console.Write("\nWhich room ? \n1-Normal ,\n 2-Normal Large ,\n 3-Premium ,\n 4-Premium Large ,\n 5-King Suite ,\n 6-King Suite Large\n: ");
+            Console.Write("\nWhich room? \n1-Normal ,\n 2-Normal Large ,\n 3-Premium ,\n 4-Premium Large ,\n 5-King Suite ,\n 6-King Suite Large\n: ");
         }
-        //while döngüsü kullanıcı doğru oda numarası girene kadar tekrardan sormaya devam eder.
 
-        //Hedef oda Find komutu ile bulunur.
+        // oda bulunur
         Room targetRoom = hotel.Rooms.Find(room => room.roomNumber == roomNumber);
 
-        // eğer hedef oda boş değilse ve hedef odada misafir adı var ise,ilgili oda için rezervasyonu tamamen siler.
+        // odanın dolu olup olmadığı kontrol ederiz.
         if (targetRoom != null && targetRoom.customerName != "")
         {
-            Console.WriteLine($"Reservation for room {roomNumber} was deleted. {targetRoom.customerName} {targetRoom.customerSurname}, {targetRoom.numberOfDaysToStay} day, {targetRoom.numberOfPeople} person");
-            targetRoom.customerName = "";
-            targetRoom.customerSurname = "";
-            targetRoom.numberOfDaysToStay = 0;
-            targetRoom.numberOfPeople = 0;
+            Console.WriteLine($"Reservation for room {roomNumber}:");
+            Console.WriteLine($"Customer Name: {targetRoom.customerName}");
+            Console.WriteLine($"Customer Surname: {targetRoom.customerSurname}");
+            Console.WriteLine($"Number of Days to Stay: {targetRoom.numberOfDaysToStay}");
+            Console.WriteLine($"Number of People: {targetRoom.numberOfPeople}");
+
+            //Kullanıcıya  emin misin sorusu sorduk
+            Console.Write("Are you sure you want to delete this reservation? (1-Yes, 2-No): ");
+            string confirmation = Console.ReadLine();
+
+            //Eğer cevap evet ise oda silinir
+            if (confirmation == "1")
+            {
+                Console.WriteLine($"Reservation for room {roomNumber} was deleted. {targetRoom.customerName} {targetRoom.customerSurname}, {targetRoom.numberOfDaysToStay} day, {targetRoom.numberOfPeople} person");
+                targetRoom.customerName = "";
+                targetRoom.customerSurname = "";
+                targetRoom.numberOfDaysToStay = 0;
+                targetRoom.numberOfPeople = 0;
+            }
+            //eğer cevap hayır ise rezervasyon silme iptal edildi mesajı verdik
+            else if (confirmation == "2")
+            {
+                Console.WriteLine("Reservation deletion canceled.");
+            }
+            //farklı numaraların girilmesi durumunda kullanıcıya hata mesajı verdik.
+            else
+            {
+                Console.WriteLine("Invalid input. Reservation deletion canceled.");
+            }
         }
-        //eğer hedef oda boş işe kullanıcıya bilgi verilir.
+        //oda boş ise kullanıcıya hata mesajı verdik.
         else
         {
-            Console.WriteLine($"{roomNumber}.room is already empty.");
+            Console.WriteLine($"Room {roomNumber} is either empty or has no reservation.");
         }
-
     }
 
+    //müşterilerin bilgilerini değiştirebiliceğimiz fonksiyon oluşturuldu.
     static void changeCustomerInformation(Hotel hotel)
     {
+        //kullanıcıya hangi odanın bilgilerini değiştireceği sorduk
         Console.Write("Enter the room number for which you want to change customer information:\n1-Normal ,\n 2-Normal Large ,\n 3-Premium ,\n 4-Premium Large ,\n 5-King Suite ,\n 6-King Suite Large\n: ");
         int roomNumber;
+        //Kullanıcının 1 ila 6 arası numara girildiği kontrol edildi.
         while (!int.TryParse(Console.ReadLine(), out roomNumber) || roomNumber < 1 || roomNumber > 6)
         {
             Console.WriteLine("Invalid room number. Please enter again.");
             Console.Write("Enter the room number for which you want to change customer information:\n1-Normal ,\n 2-Normal Large ,\n 3-Premium ,\n 4-Premium Large ,\n 5-King Suite ,\n 6-King Suite Large\n: ");
         }
 
-        // Find the target room
+        //aranan oda bulundu
         Room targetRoom = hotel.Rooms.Find(room => room.roomNumber == roomNumber);
 
-        // Check if the room is not empty and has a reservation
+        //odanın boş olup olmadığı kontrol edildi
         if (targetRoom != null && targetRoom.customerName != "")
         {
             Console.WriteLine($"Current Information for room {roomNumber}:");
@@ -477,6 +528,7 @@ class Program
             Console.WriteLine($"Number of Days to Stay: {targetRoom.numberOfDaysToStay}");
             Console.WriteLine($"Number of People: {targetRoom.numberOfPeople}");
 
+            //yeni temel bilgiler soruldu.
             Console.WriteLine("Enter the new information:");
 
             Console.Write("New Customer Name: ");
@@ -487,6 +539,7 @@ class Program
 
             Console.Write("New Number of Days to Stay: ");
             int newNumberOfDays;
+            //kalanıcak günün 0 dan küçük olup olmadığı kontrol edildi.
             while (!int.TryParse(Console.ReadLine(), out newNumberOfDays) || newNumberOfDays <= 0)
             {
                 Console.WriteLine("Invalid number of days. Please enter a positive integer.");
@@ -502,16 +555,17 @@ class Program
                 Console.Write("New Number of People: ");
             }
             targetRoom.numberOfPeople = newNumberOfPeople;
-
+            // yeni bilgilerin girildiği kullanıcıya mesaj olarak verildi.
             Console.WriteLine($"Customer information for room {roomNumber} has been updated.");
         }
+        // oda hali hazırda boş ise kullanıcıya hata mesajı verildi.
         else
         {
             Console.WriteLine($"Room {roomNumber} is either empty or has no reservation.");
         }
     }
 
-
+    //toplam tutarı gösteren fonksiyon oluşturuldu.
     static void viewTotalAmount(Hotel hotel)
     {
         decimal totalAmount = 0;
@@ -535,6 +589,7 @@ class Program
 
         Console.WriteLine($"\nTotal Amount: {totalAmount} $");
     }
+    //çıkış fonksiyonu oluşturuldu
     static void Exit(Hotel hotel)
     {
         Console.WriteLine("Exit...");
